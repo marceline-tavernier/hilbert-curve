@@ -43,7 +43,7 @@ void setup() {
 
 // Draw
 void draw() {
-  
+
   // Black background
   background(0);
 
@@ -56,13 +56,13 @@ void draw() {
 
   // Draw the curve with correct color and path (also used when animating)
   for (int i = 1; i < path.length; i++) {
-    
+
     // Calculate color
     float h = map(i, 0, path.length, 0, 360 * rainbow) % 360;
-    
+
     // Apply color
     stroke(h, int(isRainbow) * 255, 255);
-    
+
     // Draw the line in the path
     line(path[i].x, path[i].y, path[i - 1].x, path[i - 1].y);
   }
@@ -70,28 +70,28 @@ void draw() {
 
 // Detect when a key is released
 void keyReleased() {
-  
+
   // If UP, animate the curve
   if (key == CODED && keyCode == UP) {
     lerping = true;
     lerpingUp = true;
-  } 
-  
+  }
+
   // If DOWN, animate the curve
   else if (order > 1 && key == CODED && keyCode == DOWN) {
     lerping = true;
-  } 
-  
+  }
+
   // If R, change between rainbow color and white
   else if (key == 'r' || key == 'R') {
     isRainbow = !isRainbow;
-  } 
-  
+  }
+
   // If M, add a rainbow
   else if (key == 'm' || key == 'M') {
     rainbow++;
-  } 
-  
+  }
+
   // If L, remove a rainbow
   else if (rainbow > 1 && (key == 'l' || key == 'L')) {
     rainbow--;
@@ -126,7 +126,7 @@ void calculatePaths() {
 
       // Generate the next point
       path[i * 4 + j] = hilbert(i, order);
-      
+
       // Scale it and move it according on the order
       float len = width / N;
       path[i * 4 + j].mult(len);
@@ -139,7 +139,7 @@ void calculatePaths() {
 
     // Generate the next point
     pathNext[i] = hilbert(i, orderNext);
-    
+
     // Scale it and move it according to the order
     float lenNext = width / NNext;
     pathNext[i].mult(lenNext);
@@ -151,7 +151,7 @@ void calculatePaths() {
 
     // Generate the next point
     pathBefore[i] = hilbert(i, orderNext);
-    
+
     // Scale it and move it according to the order
     float lenBefore = width / NBefore;
     pathBefore[i].mult(lenBefore);
@@ -161,7 +161,7 @@ void calculatePaths() {
 
 // The algorithm to create the hilbert curve
 PVector hilbert(int i, int order) {
-  
+
   // Points in first order
   PVector[] points = {
     new PVector(0, 0),
@@ -176,7 +176,7 @@ PVector hilbert(int i, int order) {
 
   // Loop through all order
   for (int j = 1; j < order; j++) {
-    
+
     // Go to the next order
     i = i >>> 2;
     index = i & 3;
@@ -188,19 +188,19 @@ PVector hilbert(int i, int order) {
       float temp = v.x;
       v.x = v.y;
       v.y = temp;
-    } 
-    
+    }
+
     // If int the bottom left part, move it down
     else if (index == 1) {
       v.y += len;
-    } 
-    
+    }
+
     // If in the bottom right part, move it down and right
     else if (index == 2) {
       v.x += len;
       v.y += len;
-    } 
-    
+    }
+
     // If in the top right part, rotate it and move it right
     else if (index == 3) {
       float temp = len - 1 - v.x;
@@ -209,60 +209,60 @@ PVector hilbert(int i, int order) {
       v.x += len;
     }
   }
-  
+
   // Return the correct point
   return v;
 }
 
 // To animate between the curve and the next or the previous
 void lerping() {
-  
+
   // If we need to animate
   if (lerping) {
-    
+
     // And still need to animate
     if (lerpingCount <= maxLerping) {
-      
+
       // If moving up an order
       if (lerpingUp) {
-        
+
         // Lerp all points from the curve to the next
         for (int i = 0; i < path.length; i++) {
           path[i].lerp(pathNext[i], map(lerpingCount, 0, 30, 0.05, 1));
         }
-      } 
-      
+      }
+
       // If moving down an order
       else {
-        
+
         // Lerp all points from the curve to the previous
         for (int i = 0; i < path.length; i++) {
           path[i].lerp(pathBefore[i / 16], map(lerpingCount, 0, 30, 0.05, 1));
         }
       }
-      
+
       // Move a 'frame' in the animation
       lerpingCount++;
-    } 
-    
+    }
+
     // When the animation is finished
     else {
-      
+
       // Reset the 'frames' and animation state
       lerpingCount = 0;
       lerping = false;
-      
+
       // If we went up an order, change the order and reset the animation up
       if (lerpingUp) {
         order += 1;
         lerpingUp = false;
-      } 
-      
+      }
+
       // If we went down an order, change the order
       else {
         order -= 1;
       }
-      
+
       // Calculate the new paths (for up and down too)
       calculatePaths();
     }
