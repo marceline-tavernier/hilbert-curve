@@ -32,7 +32,7 @@ void setup() {
   // Set size to 512x512, framerate to 30 fps and title
   size(512, 512);
   frameRate(30);
-  surface.setTitle("The coding train cabana #3 : Hilbert Curve");
+  surface.setTitle("The coding train cabana #3 : Hilbert curve");
 
   // Set the colors to be on the color wheel
   colorMode(HSB, 360, 255, 255);
