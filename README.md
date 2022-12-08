@@ -1,7 +1,7 @@
 # Hilbert Curve
 The coding train cabana #3 : Hilbert curve
 
-[Hilbert Curve video](https://user-images.githubusercontent.com/120074055/206556005-f975b93c-ae7d-434f-9e78-964026d0af1b.mp4)
+[Hilbert curve video](https://user-images.githubusercontent.com/120074055/206556005-f975b93c-ae7d-434f-9e78-964026d0af1b.mp4)
 
 ## Description
 - Visualize the Hilbert curve 
