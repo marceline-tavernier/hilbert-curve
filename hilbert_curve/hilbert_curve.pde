@@ -18,8 +18,10 @@ int rainbow = 1;
 PVector[] path;
 PVector[] pathNext;
 PVector[] pathBefore;
+PVector[] pathPrevious;
 
 boolean lerping = false;
+boolean animating = false;
 boolean lerpingUp = false;
 int lerpingCount = 0;
 int maxLerping = 10;
@@ -73,13 +75,19 @@ void keyReleased() {
 
   // If UP, animate the curve
   if (key == CODED && keyCode == UP) {
-    lerping = true;
-    lerpingUp = true;
+    if (!animating) {
+      animating = true;
+      lerping = true;
+      lerpingUp = true;
+    }
   }
 
   // If DOWN, animate the curve
   else if (order > 1 && key == CODED && keyCode == DOWN) {
-    lerping = true;
+    if (!animating) {
+      lerping = true;
+      animating = true;
+    }
   }
 
   // If R, change between rainbow color and white
@@ -105,6 +113,7 @@ void calculatePaths() {
   N = int(pow(2, order));
   total = N * N;
   path = new PVector[total * 4];
+  pathPrevious = new PVector[total];
 
   // Initialize variables for order + 1
   orderNext = order + 1;
@@ -116,7 +125,7 @@ void calculatePaths() {
   orderBefore = order - 1;
   NBefore = int(pow(2, orderBefore));
   totalBefore = NBefore * NBefore;
-  pathBefore = new PVector[totalBefore];
+  pathBefore = new PVector[totalBefore * 4];
 
   // Loop through all points in the path of the curve
   for (int i = 0; i < total; i++) {
@@ -124,38 +133,94 @@ void calculatePaths() {
     // Do it 4 times to prepare for the next curve
     for (int j = 0; j < 4; j++) {
 
-      // Generate the next point
+      // Generate point
       path[i * 4 + j] = hilbert(i, order);
+    }
+  }
 
-      // Scale it and move it according on the order
-      float len = width / N;
-      path[i * 4 + j].mult(len);
-      path[i * 4 + j].add(len / 2, len / 2);
+  // Dispatch points for the animation to the next curve
+  for (int i = 0; i < total; i++) {
+    for (int j = 0; j < 4; j++) {
+      if (i % 4 == 0) {
+        PVector dir = new PVector(path[(i + 1) * 4 + 1].x - path[i * 4 + j].x, path[(i + 1) * 4 + 1].y - path[i * 4 + j].y);
+        path[i * 4 + j].add(j * (dir.x / 5), j * (dir.y / 5));
+      } else if (i % 4 == 1) {
+        if (j == 0) {
+          PVector dir = new PVector(path[(i - 1) * 4].x - path[i * 4 + j].x, path[(i - 1) * 4].y - path[i * 4 + j].y);
+          path[i * 4 + j].add((dir.x / 5), (dir.y / 5));
+        } else {
+          PVector dir = new PVector(path[(i + 1) * 4 + 2].x - path[i * 4 + j].x, path[(i + 1) * 4 + 2].y - path[i * 4 + j].y);
+          path[i * 4 + j].add((j - 1) * (dir.x / 5), (j - 1) * (dir.y / 5));
+        }
+      } else if (i % 4 == 2) {
+        if (j == 3) {
+          PVector dir = new PVector(path[(i + 1) * 4 + 3].x - path[i * 4 + j].x, path[(i + 1) * 4 + 3].y - path[i * 4 + j].y);
+          path[i * 4 + j].add((dir.x / 5), (dir.y / 5));
+        } else {
+          PVector dir = new PVector(path[(i - 1) * 4 + 1].x - path[i * 4 + j].x, path[(i - 1) * 4 + 1].y - path[i * 4 + j].y);
+          path[i * 4 + j].add((3 - j - 1) * (dir.x / 5), (3 - j - 1) * (dir.y / 5));
+        }
+      } else if (i % 4 == 3) {
+        PVector dir = new PVector(path[(i - 1) * 4 + 2].x - path[i * 4 + j].x, path[(i - 1) * 4 + 2].y - path[i * 4 + j].y);
+        path[i * 4 + j].add((3 - j) * (dir.x / 5), (3 - j) * (dir.y / 5));
+      }
+    }
+  }
+
+  // Loop through all points in the path of the next curve
+  for (int i = 0; i < totalNext; i++) {
+
+    // Generate point
+    pathNext[i] = hilbert(i, orderNext);
+  }
+
+  // Loop through all points in the path of the previous curve
+  for (int i = 0; i < totalBefore; i++) {
+
+    // Do it 4 times to prepare for the next curve
+    for (int j = 0; j < 4; j++) {
+
+      // Generate point
+      pathBefore[i * 4 + j] = hilbert(i, orderBefore);
+    }
+  }
+
+  // Dispatch points for the animation from the curve
+  if (orderBefore != 0) {
+    for (int i = 0; i < totalBefore; i++) {
+      for (int j = 0; j < 4; j++) {
+        if (i % 4 == 0) {
+          PVector dir = new PVector(pathBefore[(i + 1) * 4 + 1].x - pathBefore[i * 4 + j].x, pathBefore[(i + 1) * 4 + 1].y - pathBefore[i * 4 + j].y);
+          pathBefore[i * 4 + j].add(j * (dir.x / 5), j * (dir.y / 5));
+        } else if (i % 4 == 1) {
+          if (j == 0) {
+            PVector dir = new PVector(pathBefore[(i - 1) * 4].x - pathBefore[i * 4 + j].x, pathBefore[(i - 1) * 4].y - pathBefore[i * 4 + j].y);
+            pathBefore[i * 4 + j].add((dir.x / 5), (dir.y / 5));
+          } else {
+            PVector dir = new PVector(pathBefore[(i + 1) * 4 + 2].x - pathBefore[i * 4 + j].x, pathBefore[(i + 1) * 4 + 2].y - pathBefore[i * 4 + j].y);
+            pathBefore[i * 4 + j].add((j - 1) * (dir.x / 5), (j - 1) * (dir.y / 5));
+          }
+        } else if (i % 4 == 2) {
+          if (j == 3) {
+            PVector dir = new PVector(pathBefore[(i + 1) * 4 + 3].x - pathBefore[i * 4 + j].x, pathBefore[(i + 1) * 4 + 3].y - pathBefore[i * 4 + j].y);
+            pathBefore[i * 4 + j].add((dir.x / 5), (dir.y / 5));
+          } else {
+            PVector dir = new PVector(pathBefore[(i - 1) * 4 + 1].x - pathBefore[i * 4 + j].x, pathBefore[(i - 1) * 4 + 1].y - pathBefore[i * 4 + j].y);
+            pathBefore[i * 4 + j].add((3 - j - 1) * (dir.x / 5), (3 - j - 1) * (dir.y / 5));
+          }
+        } else if (i % 4 == 3) {
+          PVector dir = new PVector(pathBefore[(i - 1) * 4 + 2].x - pathBefore[i * 4 + j].x, pathBefore[(i - 1) * 4 + 2].y - pathBefore[i * 4 + j].y);
+          pathBefore[i * 4 + j].add((3 - j) * (dir.x / 5), (3 - j) * (dir.y / 5));
+        }
+      }
     }
   }
 
   // Loop through all points in the path of the curve
-  for (int i = 0; i < totalNext; i++) {
+  for (int i = 0; i < total; i++) {
 
-    // Generate the next point
-    pathNext[i] = hilbert(i, orderNext);
-
-    // Scale it and move it according to the order
-    float lenNext = width / NNext;
-    pathNext[i].mult(lenNext);
-    pathNext[i].add(lenNext / 2, lenNext / 2);
-  }
-
-  // Loop through all points in the path of the curve
-  for (int i = 0; i < totalBefore; i++) {
-
-    // Generate the next point
-    pathBefore[i] = hilbert(i, orderNext);
-
-    // Scale it and move it according to the order
-    float lenBefore = width / NBefore;
-    pathBefore[i].mult(lenBefore);
-    pathBefore[i].add(lenBefore / 2, lenBefore / 2);
+    // Generate point
+    pathPrevious[i] = hilbert(i, order);
   }
 }
 
@@ -210,6 +275,10 @@ PVector hilbert(int i, int order) {
     }
   }
 
+  // Scale it and move it according to the order
+  v.mult(9 * width / 10 / (pow(2, order) - 1));
+  v.add(width / 20, width / 20);
+
   // Return the correct point
   return v;
 }
@@ -235,9 +304,12 @@ void lerping() {
       // If moving down an order
       else {
 
+        // Reset the path curve with 4 times less points for the animation
+        path = pathPrevious;
+
         // Lerp all points from the curve to the previous
         for (int i = 0; i < path.length; i++) {
-          path[i].lerp(pathBefore[i / 16], map(lerpingCount, 0, 30, 0.05, 1));
+          path[i].lerp(pathBefore[i], map(lerpingCount, 0, 30, 0.05, 1));
         }
       }
 
@@ -247,10 +319,6 @@ void lerping() {
 
     // When the animation is finished
     else {
-
-      // Reset the 'frames' and animation state
-      lerpingCount = 0;
-      lerping = false;
 
       // If we went up an order, change the order and reset the animation up
       if (lerpingUp) {
@@ -265,6 +333,11 @@ void lerping() {
 
       // Calculate the new paths (for up and down too)
       calculatePaths();
+
+      // Reset the 'frames' and animation state
+      lerpingCount = 0;
+      lerping = false;
+      animating = false;
     }
   }
 }
